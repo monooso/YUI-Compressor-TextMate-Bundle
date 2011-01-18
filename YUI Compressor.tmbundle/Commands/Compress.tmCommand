@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>beforeRunningCommand</key>
+	<string>saveModifiedFiles</string>
+	<key>command</key>
+	<string>#! /usr/bin/env python
+
+import os, sys
+
+try:
+	selected_files_string = os.environ['TM_SELECTED_FILES']
+except KeyError:
+	print 'No files selected.'
+	sys.exit()
+
+# Strip the start and end quotes, then split the string
+# into files.
+selected_files_string = selected_files_string.strip("'")
+selected_files = selected_files_string.split("' '")
+
+if len(selected_files) == 0:
+	print 'No files selected.'
+	sys.exit()
+
+try:
+	yui = os.environ['TM_YUI_COMPRESSOR_LOCATION']
+except KeyError:
+	print 'Unable to find a path for your YUI Compressor in "Preferences...". Please refer to "Help" in the bundle.'
+	sys.exit()
+
+if not os.path.isfile(yui):
+	print 'Unable to find your YUI Compressor file. Please refer to "Help" in the bundle.'
+	sys.exit()
+
+compressed = []
+for f in selected_files:
+	if not os.path.isfile(f):
+		continue
+	if not f.lower().endswith('js') and not f.lower().endswith('css'):
+		continue
+	f_split = f.rpartition('/')  # Extract the path and filename
+	if f_split[0] is '':
+		continue
+	path = (f_split[0] + f_split[1]).replace(' ', '\\ ')
+	in_fn = f_split[2].replace(' ', '\\ ')
+	cmd = 'java -jar ' + yui.replace(' ', '\\ ') + ' -o '
+
+	# Create the output filename
+	if in_fn.lower().endswith('js'):
+		out_fn = path + (in_fn[:-3] + '.min' + in_fn[-3:]).replace(' ', '\\ ')
+		cmd = cmd + out_fn + ' --nomunge '
+	else:
+		out_fn = path + (in_fn[:-4] + '.min' + in_fn[-4:]).replace(' ', '\\ ')
+		cmd = cmd + out_fn + ' '
+	cmd = cmd + f.replace(' ', '\\ ')
+	os.system(cmd)
+	compressed.append([f, out_fn])
+
+if len(compressed) &gt; 0:
+	msg = 'The following files were compressed:\n'
+	for i, f in enumerate(compressed):
+		msg = msg + str(i + 1) + '. ' + f[0] + '\n'
+		msg = msg + '   to ' + f[1].replace('\\ ', ' ') + '\n\n'
+else:
+	msg = 'No files were compressed.'
+print msg</string>
+	<key>input</key>
+	<string>none</string>
+	<key>keyEquivalent</key>
+	<string>^Y</string>
+	<key>name</key>
+	<string>Compress</string>
+	<key>output</key>
+	<string>showAsTooltip</string>
+	<key>scope</key>
+	<string>source.js, source.css</string>
+	<key>uuid</key>
+	<string>66F1C123-BAB3-42B4-9A8D-10E98CB6E2A7</string>
+</dict>
+</plist>
